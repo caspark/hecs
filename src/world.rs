@@ -418,14 +418,18 @@ impl World {
         &self.entities.meta
     }
 
+    /// Get the id's of all pending (free) entities
     pub fn pending(&self) -> &[u32] {
         &self.entities.pending
     }
 
+    /// Set a custom list of generations
     pub fn push_generations(&mut self, generations: &[u32]) {
         self.entities.push_generations(generations);
     }
 
+    /// Manually set what entities are pending
+    /// THIS MIGHT BREAK YOUR WORLD, CAREFULL
     pub fn push_pending(&mut self, pendings: &[u32]) {
         self.entities.push_pending(pendings);
     }
