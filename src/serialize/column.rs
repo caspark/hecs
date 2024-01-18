@@ -291,7 +291,20 @@ where
     }
 
     let predicate = |x: &&Archetype| -> bool { !x.is_empty() && x.satisfies::<Q>() };
-    let mut seq = serializer.serialize_seq(Some(world.archetypes().filter(predicate).count()))?;
+    let mut seq = serializer.serialize_seq(Some(world.archetypes().filter(predicate).count() + 2))?;
+    
+    let generations: Vec<u32> = world.entities_meta().iter().map(|m| m.generation.get()).collect();
+    seq.serialize_element(&generations.len())?;
+    for gen in generations.iter() {
+        seq.serialize_element(gen)?;
+    }
+    
+    let pending = world.pending();
+    seq.serialize_element(&pending.len())?;
+    for pen in pending.iter() {
+        seq.serialize_element(pen)?;
+    }
+    
     for archetype in world.archetypes().filter(predicate) {
         seq.serialize_element(&SerializeArchetype {
             world,
@@ -299,6 +312,7 @@ where
             ctx: RefCell::new(context),
         })?;
     }
+
     seq.end()
 }
 
@@ -522,12 +536,24 @@ where
     {
         let mut world = World::new();
         let mut entities = Vec::new();
+
+        let generations_len = seq.next_element::<usize>()?.expect("");
+        let generations: Vec<u32> = (0..generations_len).into_iter().map(|_| seq.next_element::<u32>().expect("").expect("")).collect();
+
+        let pend_len = seq.next_element::<usize>()?.expect("");
+        let pending: Vec<u32> = (0..pend_len).into_iter().map(|_| seq.next_element::<u32>().expect("").expect("")).collect();
+
+
         while let Some(bundle) =
             seq.next_element_seed(DeserializeArchetype(self.0, &mut entities))?
         {
             world.spawn_column_batch_at(&entities, bundle);
             entities.clear();
         }
+
+        world.push_generations(&generations);
+        world.push_pending(&pending);
+        
         Ok(world)
     }
 }
@@ -742,7 +768,9 @@ impl<'de, 'a> Visitor<'de> for EntitiesVisitor<'a> {
 mod tests {
     use crate::alloc::vec::Vec;
     use core::fmt;
+    use std::{io::BufWriter, fs::File, dbg, println};
 
+    use alloc::{vec, string::String};
     use serde::{Deserialize, Serialize};
 
     use super::*;
@@ -913,6 +941,35 @@ mod tests {
             try_serialize::<Velocity, _>(archetype, &mut out)?;
             out.end()
         }
+    }
+
+    #[test]
+    fn deterministic() {
+        let buffer = Vec::<u8>::new();
+
+        let mut world = World::new();
+        let mut context = Context {
+            components: vec![ComponentId::Position, ComponentId::Velocity]
+        };
+        let mut serializer = serde_json::Serializer::new(buffer);
+
+        let v0 = Velocity([1.0, 1.0, 1.0]);
+
+        let e = world.spawn((v0,));
+        world.despawn(e).expect("");
+
+        serialize(&mut world, &mut context, &mut serializer).expect("Could not serialize");
+
+        let serialized= String::from_utf8(serializer.into_inner()).expect("Could not read string");
+
+        let mut deserializer = serde_json::Deserializer::from_str(&serialized);
+        
+        let mut second_world = deserialize(&mut context, &mut deserializer).expect("Could not deserialize");
+
+        let e1 = world.spawn((v0,));
+        let e2 = second_world.spawn((v0,));
+
+        assert_eq!(e1, e2);
     }
 
     #[test]

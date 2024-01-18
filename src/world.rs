@@ -10,6 +10,7 @@ use core::any::TypeId;
 use core::borrow::Borrow;
 use core::convert::TryFrom;
 use core::hash::{BuildHasherDefault, Hasher};
+use core::num::{NonZeroI32, NonZeroU32};
 use spin::Mutex;
 
 use core::{fmt, ptr};
@@ -415,6 +416,23 @@ impl World {
     #[inline(always)]
     pub(crate) fn entities_meta(&self) -> &[EntityMeta] {
         &self.entities.meta
+    }
+
+    pub(crate) fn push_generations(&mut self, generations: &[u32]) {
+        for (index, meta) in self.entities.meta.iter_mut().enumerate() {
+            meta.generation = NonZeroU32::new(generations[index]).expect("");
+        }
+    }
+
+    pub(crate) fn pending(&self) -> &[u32] {
+        &self.entities.pending
+    }
+
+    pub(crate) fn push_pending(&mut self, pendings: &[u32]) {
+        assert_eq!(self.entities.pending.len(), pendings.len());
+
+        self.entities.pending.clear();
+        self.entities.pending.extend_from_slice(pendings);
     }
 
     #[inline(always)]

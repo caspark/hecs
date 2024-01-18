@@ -182,7 +182,7 @@ pub(crate) struct Entities {
     // and then from the new IDs, using only a single atomic subtract.
     //
     // Once `flush()` is done, `free_cursor` will equal `pending.len()`.
-    pending: Vec<u32>,
+    pub pending: Vec<u32>,
     free_cursor: AtomicIsize,
     len: u32,
 }
