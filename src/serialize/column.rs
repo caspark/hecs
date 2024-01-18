@@ -15,6 +15,7 @@
 
 use crate::alloc::vec::Vec;
 use core::{any::type_name, cell::RefCell, fmt, marker::PhantomData};
+use serde::ser::Error;
 
 use serde::{
     de::{self, DeserializeSeed, SeqAccess, Unexpected, Visitor},
@@ -186,6 +187,10 @@ where
     S: Serializer,
     C: SerializeContext,
 {
+    if !world.is_flushed() {
+        return Result::Err(<S as Serializer>::Error::custom("Serialize requires the world to be flushed first."));
+    }
+
     struct SerializeArchetype<'a, C> {
         world: &'a World,
         archetype: &'a Archetype,
@@ -542,7 +547,6 @@ where
 
         let pend_len = seq.next_element::<usize>()?.expect("");
         let pending: Vec<u32> = (0..pend_len).into_iter().map(|_| seq.next_element::<u32>().expect("").expect("")).collect();
-
 
         while let Some(bundle) =
             seq.next_element_seed(DeserializeArchetype(self.0, &mut entities))?
@@ -956,6 +960,7 @@ mod tests {
         let v0 = Velocity([1.0, 1.0, 1.0]);
 
         let e = world.spawn((v0,));
+        let _ = world.spawn((v0, ));
         world.despawn(e).expect("");
 
         serialize(&mut world, &mut context, &mut serializer).expect("Could not serialize");

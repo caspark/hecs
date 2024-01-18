@@ -418,21 +418,16 @@ impl World {
         &self.entities.meta
     }
 
-    pub(crate) fn push_generations(&mut self, generations: &[u32]) {
-        for (index, meta) in self.entities.meta.iter_mut().enumerate() {
-            meta.generation = NonZeroU32::new(generations[index]).expect("");
-        }
-    }
-
-    pub(crate) fn pending(&self) -> &[u32] {
+    pub fn pending(&self) -> &[u32] {
         &self.entities.pending
     }
 
-    pub(crate) fn push_pending(&mut self, pendings: &[u32]) {
-        assert_eq!(self.entities.pending.len(), pendings.len());
+    pub fn push_generations(&mut self, generations: &[u32]) {
+        self.entities.push_generations(generations);
+    }
 
-        self.entities.pending.clear();
-        self.entities.pending.extend_from_slice(pendings);
+    pub fn push_pending(&mut self, pendings: &[u32]) {
+        self.entities.push_pending(pendings);
     }
 
     #[inline(always)]
@@ -917,6 +912,11 @@ impl World {
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+
+    /// Whether there are unallocated reserved entities 
+    pub fn is_flushed(&self) -> bool {
+        !self.entities.needs_flush()
     }
 }
 

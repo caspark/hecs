@@ -339,10 +339,7 @@ impl Entities {
         self.verify_flushed();
 
         let loc = if entity.id as usize >= self.meta.len() {
-            self.pending.extend((self.meta.len() as u32)..entity.id);
-            let new_free_cursor = self.pending.len() as isize;
-            *self.free_cursor.get_mut() = new_free_cursor;
-            self.meta.resize(entity.id as usize + 1, EntityMeta::EMPTY);
+            self.extend_meta((entity.id + 1) as usize, false);
             self.len += 1;
             None
         } else if let Some(index) = self.pending.iter().position(|item| *item == entity.id) {
@@ -490,8 +487,8 @@ impl Entities {
         }
     }
 
-    fn needs_flush(&mut self) -> bool {
-        *self.free_cursor.get_mut() != self.pending.len() as isize
+    pub fn needs_flush(&self) -> bool {
+        self.free_cursor.load(Ordering::Relaxed) != self.pending.len() as isize
     }
 
     /// Allocates space for entities previously reserved with `reserve_entity` or
@@ -519,6 +516,34 @@ impl Entities {
         for id in self.pending.drain(new_free_cursor..) {
             init(id, &mut self.meta[id as usize].location);
         }
+    }
+
+    fn extend_meta(&mut self, new_len: usize, include_last: bool) {
+        let upper_limit = if include_last {
+            new_len as u32
+        } else {
+            new_len as u32 - 1
+        };
+
+        self.pending.extend((self.meta.len() as u32)..upper_limit);
+        let new_free_cursor = self.pending.len() as isize;
+        *self.free_cursor.get_mut() = new_free_cursor;
+        self.meta.resize(new_len, EntityMeta::EMPTY);
+    }
+
+    pub fn push_generations(&mut self, generations: &[u32]) {
+        if self.meta.len() < generations.len() {
+            self.extend_meta(generations.len(), true);
+        }
+
+        for (index, meta) in self.meta.iter_mut().enumerate() {
+            meta.generation = NonZeroU32::new(generations[index]).expect("");
+        }
+    }
+
+    pub fn push_pending(&mut self, pendings: &[u32]) {
+        self.pending.clear();
+        self.pending.extend_from_slice(pendings);
     }
 
     #[inline]
