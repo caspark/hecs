@@ -537,13 +537,26 @@ impl Entities {
         }
 
         for (index, meta) in self.meta.iter_mut().enumerate() {
-            meta.generation = NonZeroU32::new(generations[index]).expect("");
+            meta.generation = NonZeroU32::new(generations[index]).expect("Could not create non zero u32");
         }
     }
 
-    pub fn push_pending(&mut self, pendings: &[u32]) {
+    pub fn push_pending(&mut self, pendings: &[u32])-> Result<(), ()> {
+        // TODO: Should we check if they are same length?
+        // TODO: Add proper error type
         self.pending.clear();
-        self.pending.extend_from_slice(pendings);
+
+        let meta_length = self.meta.len();
+
+        for pending in pendings {
+            if meta_length <= *pending as usize || self.meta[*pending as usize].location.index != u32::MAX {
+                return Result::Err(());
+            }
+
+            self.pending.push(*pending);
+        }
+
+        return Result::Ok(());
     }
 
     #[inline]

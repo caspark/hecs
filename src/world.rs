@@ -429,7 +429,6 @@ impl World {
     }
 
     /// Manually set what entities are pending
-    /// THIS MIGHT BREAK YOUR WORLD, CAREFULL
     pub fn push_pending(&mut self, pendings: &[u32]) {
         self.entities.push_pending(pendings);
     }

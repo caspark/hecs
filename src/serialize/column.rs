@@ -299,16 +299,9 @@ where
     let mut seq = serializer.serialize_seq(Some(world.archetypes().filter(predicate).count() + 2))?;
     
     let generations: Vec<u32> = world.entities_meta().iter().map(|m| m.generation.get()).collect();
-    seq.serialize_element(&generations.len())?;
-    for gen in generations.iter() {
-        seq.serialize_element(gen)?;
-    }
-    
+    seq.serialize_element(&generations)?;
     let pending = world.pending();
-    seq.serialize_element(&pending.len())?;
-    for pen in pending.iter() {
-        seq.serialize_element(pen)?;
-    }
+    seq.serialize_element(pending)?;
     
     for archetype in world.archetypes().filter(predicate) {
         seq.serialize_element(&SerializeArchetype {
@@ -542,12 +535,9 @@ where
         let mut world = World::new();
         let mut entities = Vec::new();
 
-        let generations_len = seq.next_element::<usize>()?.expect("");
-        let generations: Vec<u32> = (0..generations_len).into_iter().map(|_| seq.next_element::<u32>().expect("").expect("")).collect();
-
-        let pend_len = seq.next_element::<usize>()?.expect("");
-        let pending: Vec<u32> = (0..pend_len).into_iter().map(|_| seq.next_element::<u32>().expect("").expect("")).collect();
-
+        let generations = seq.next_element::<Vec<u32>>()?.expect("");
+        let pending = seq.next_element::<Vec<u32>>()?.expect("");
+        
         while let Some(bundle) =
             seq.next_element_seed(DeserializeArchetype(self.0, &mut entities))?
         {
