@@ -548,8 +548,6 @@ impl Entities {
     }
 
     pub fn push_pending(&mut self, pendings: &[u32])-> Result<(), PendingPushError> {
-        // TODO: Should we check if they are same length?
-        // TODO: Add proper error type
         self.pending.clear();
 
         let meta_length = self.meta.len();
