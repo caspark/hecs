@@ -546,7 +546,7 @@ where
         }
 
         world.push_generations(&generations);
-        world.push_pending(&pending);
+        world.push_pending(&pending).expect("Could not push pending.");
         
         Ok(world)
     }
@@ -762,7 +762,6 @@ impl<'de, 'a> Visitor<'de> for EntitiesVisitor<'a> {
 mod tests {
     use crate::alloc::vec::Vec;
     use core::fmt;
-    use std::{io::BufWriter, fs::File, dbg, println};
 
     use alloc::{vec, string::String};
     use serde::{Deserialize, Serialize};

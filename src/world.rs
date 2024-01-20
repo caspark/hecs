@@ -10,7 +10,6 @@ use core::any::TypeId;
 use core::borrow::Borrow;
 use core::convert::TryFrom;
 use core::hash::{BuildHasherDefault, Hasher};
-use core::num::{NonZeroI32, NonZeroU32};
 use spin::Mutex;
 
 use core::{fmt, ptr};
@@ -22,7 +21,7 @@ use hashbrown::hash_map::{Entry, HashMap};
 
 use crate::alloc::boxed::Box;
 use crate::archetype::{Archetype, TypeIdMap, TypeInfo};
-use crate::entities::{Entities, EntityMeta, Location, ReserveEntitiesIterator};
+use crate::entities::{Entities, EntityMeta, Location, ReserveEntitiesIterator, PendingPushError};
 use crate::query::{assert_borrow, assert_distinct};
 use crate::{
     Bundle, ColumnBatch, ComponentRef, DynamicBundle, Entity, EntityRef, Fetch, MissingComponent,
@@ -414,12 +413,12 @@ impl World {
     }
 
     #[inline(always)]
-    pub(crate) fn entities_meta(&self) -> &[EntityMeta] {
+    pub(crate) fn entities_meta(&self) -> &Vec<EntityMeta> {
         &self.entities.meta
     }
 
     /// Get the id's of all pending (free) entities
-    pub fn pending(&self) -> &[u32] {
+    pub fn pending(&self) -> &Vec<u32> {
         &self.entities.pending
     }
 
@@ -429,8 +428,8 @@ impl World {
     }
 
     /// Manually set what entities are pending
-    pub fn push_pending(&mut self, pendings: &[u32]) {
-        self.entities.push_pending(pendings);
+    pub fn push_pending(&mut self, pendings: &[u32]) -> Result<(), PendingPushError>{
+        self.entities.push_pending(pendings)
     }
 
     #[inline(always)]

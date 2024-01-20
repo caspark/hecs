@@ -105,6 +105,12 @@ impl<'de> serde::Deserialize<'de> for Entity {
     }
 }
 
+#[derive(Debug)]
+pub enum PendingPushError {
+    MetaTooSmall,
+    EntityNotPending
+}
+
 /// An iterator returning a sequence of Entity values from `Entities::reserve_entities`.
 pub struct ReserveEntitiesIterator<'a> {
     // Metas, so we can recover the current generation for anything in the freelist.
@@ -541,7 +547,7 @@ impl Entities {
         }
     }
 
-    pub fn push_pending(&mut self, pendings: &[u32])-> Result<(), ()> {
+    pub fn push_pending(&mut self, pendings: &[u32])-> Result<(), PendingPushError> {
         // TODO: Should we check if they are same length?
         // TODO: Add proper error type
         self.pending.clear();
@@ -549,8 +555,12 @@ impl Entities {
         let meta_length = self.meta.len();
 
         for pending in pendings {
-            if meta_length <= *pending as usize || self.meta[*pending as usize].location.index != u32::MAX {
-                return Result::Err(());
+            if meta_length <= *pending as usize {
+                return Result::Err(PendingPushError::MetaTooSmall);
+            }
+
+            if self.meta[*pending as usize].location.index != u32::MAX  {
+                return Result::Err(PendingPushError::EntityNotPending);
             }
 
             self.pending.push(*pending);
