@@ -959,10 +959,8 @@ mod tests {
         let v0 = Velocity([1.0, 1.0, 1.0]);
 
         let e = world.spawn((v0, 4));
-        let e = world.spawn((v0, 4));
-        let e2 = world.spawn((Velocity([1.0, 1.0, 2.0]), ));
-        println!("{} {}", e.id(), e2.id());
-        //world.despawn(e).expect("");
+        let _ = world.spawn((v0, 4));
+        world.despawn(e).expect("");
 
         serialize(&mut world, &mut context, &mut serializer).expect("Could not serialize");
 
