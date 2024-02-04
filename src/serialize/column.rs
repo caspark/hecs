@@ -966,7 +966,6 @@ mod tests {
 
         let serialized = String::from_utf8(serializer.into_inner()).expect("Could not read string");
 
-        println!("{}", serialized);
         let mut deserializer = serde_json::Deserializer::from_str(&serialized);
         
         let mut second_world = deserialize(&mut context, &mut deserializer).expect("Could not deserialize");
