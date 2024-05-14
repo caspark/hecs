@@ -21,7 +21,7 @@ use hashbrown::hash_map::{Entry, HashMap};
 
 use crate::alloc::boxed::Box;
 use crate::archetype::{Archetype, TypeIdMap, TypeInfo};
-use crate::entities::{Entities, EntityMeta, Location, ReserveEntitiesIterator, PendingPushError};
+use crate::entities::{Entities, EntityMeta, Location, PendingPushError, ReserveEntitiesIterator};
 use crate::query::{assert_borrow, assert_distinct};
 use crate::{
     Bundle, ColumnBatch, ComponentRef, DynamicBundle, Entity, EntityRef, Fetch, MissingComponent,
@@ -440,7 +440,7 @@ impl World {
     }
 
     /// Manually set what entities are pending
-    pub fn push_pending(&mut self, pendings: &[u32]) -> Result<(), PendingPushError>{
+    pub fn push_pending(&mut self, pendings: &[u32]) -> Result<(), PendingPushError> {
         self.entities.push_pending(pendings)
     }
 
@@ -928,7 +928,7 @@ impl World {
         self.len() == 0
     }
 
-    /// Whether there are unallocated reserved entities 
+    /// Whether there are unallocated reserved entities
     pub fn is_flushed(&self) -> bool {
         !self.entities.needs_flush()
     }

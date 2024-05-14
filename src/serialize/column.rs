@@ -27,7 +27,6 @@ use crate::{
     Archetype, ColumnBatch, ColumnBatchBuilder, ColumnBatchType, Component, Entity, Query, World,
 };
 
-use std::println;
 /// Implements serialization of archetypes
 ///
 /// `serialize_component_ids` and `serialize_components` must serialize exactly the number of
@@ -189,7 +188,9 @@ where
     C: SerializeContext,
 {
     if !world.is_flushed() {
-        return Result::Err(<S as Serializer>::Error::custom("Serialize requires the world to be flushed first."));
+        return Result::Err(<S as Serializer>::Error::custom(
+            "Serialize requires the world to be flushed first.",
+        ));
     }
 
     struct SerializeArchetype<'a, C> {
@@ -297,13 +298,18 @@ where
     }
 
     let predicate = |x: &&Archetype| -> bool { !x.is_empty() && x.satisfies::<Q>() };
-    let mut seq = serializer.serialize_seq(Some(world.archetypes().filter(predicate).count() + 2))?;
-    
-    let generations: Vec<u32> = world.entities_meta().iter().map(|m| m.generation.get()).collect();
+    let mut seq =
+        serializer.serialize_seq(Some(world.archetypes().filter(predicate).count() + 2))?;
+
+    let generations: Vec<u32> = world
+        .entities_meta()
+        .iter()
+        .map(|m| m.generation.get())
+        .collect();
     seq.serialize_element(&generations)?;
     let pending = world.pending();
     seq.serialize_element(pending)?;
-    
+
     for archetype in world.archetypes().filter(predicate) {
         seq.serialize_element(&SerializeArchetype {
             world,
@@ -538,7 +544,7 @@ where
 
         let generations = seq.next_element::<Vec<u32>>()?.expect("");
         let pending = seq.next_element::<Vec<u32>>()?.expect("");
-        
+
         while let Some(bundle) =
             seq.next_element_seed(DeserializeArchetype(self.0, &mut entities))?
         {
@@ -547,8 +553,10 @@ where
         }
 
         world.push_generations(&generations);
-        world.push_pending(&pending).expect("Could not push pending.");
-        
+        world
+            .push_pending(&pending)
+            .expect("Could not push pending.");
+
         Ok(world)
     }
 }
@@ -764,7 +772,7 @@ mod tests {
     use crate::alloc::vec::Vec;
     use core::fmt;
 
-    use alloc::{vec, string::String};
+    use alloc::{string::String, vec};
     use serde::{Deserialize, Serialize};
 
     use super::*;
@@ -783,7 +791,7 @@ mod tests {
     enum ComponentId {
         Position,
         Velocity,
-        I32
+        I32,
     }
 
     /// Bodge into serde_test's very strict interface
@@ -882,7 +890,7 @@ mod tests {
                     }
                     ComponentId::Velocity => {
                         batch.add::<Velocity>();
-                    },
+                    }
                     ComponentId::I32 => {
                         batch.add::<i32>();
                     }
@@ -908,7 +916,7 @@ mod tests {
                     }
                     ComponentId::Velocity => {
                         deserialize_column::<Velocity, _>(entity_count, &mut seq, batch)?;
-                    },
+                    }
                     ComponentId::I32 => {
                         deserialize_column::<i32, _>(entity_count, &mut seq, batch)?;
                     }
@@ -952,7 +960,7 @@ mod tests {
 
         let mut world = World::new();
         let mut context = Context {
-            components: vec![ComponentId::Position, ComponentId::Velocity]
+            components: vec![ComponentId::Position, ComponentId::Velocity],
         };
         let mut serializer = serde_json::Serializer::pretty(buffer);
 
@@ -967,8 +975,9 @@ mod tests {
         let serialized = String::from_utf8(serializer.into_inner()).expect("Could not read string");
 
         let mut deserializer = serde_json::Deserializer::from_str(&serialized);
-        
-        let mut second_world = deserialize(&mut context, &mut deserializer).expect("Could not deserialize");
+
+        let mut second_world =
+            deserialize(&mut context, &mut deserializer).expect("Could not deserialize");
 
         let e1 = world.spawn((v0,));
         let e2 = second_world.spawn((v0,));
@@ -993,7 +1002,7 @@ mod tests {
             Token::TupleStruct { name: "SerWorld", len: 1 },
             Token::Seq { len: Some(5) },
 
-            // Generaitons 
+            // Generaitons
             Token::Seq { len: Some(3) },
             Token::U32(1),
             Token::U32(1),
@@ -1088,7 +1097,7 @@ mod tests {
             Token::TupleStruct { name: "SerWorld", len: 1 },
             Token::Seq { len: Some(3) },
 
-            // Generaitons 
+            // Generaitons
             Token::Seq { len: Some(3) },
             Token::U32(1),
             Token::U32(1),

@@ -112,7 +112,7 @@ impl<'de> serde::Deserialize<'de> for Entity {
 #[derive(Debug)]
 pub enum PendingPushError {
     MetaTooSmall,
-    EntityNotPending
+    EntityNotPending,
 }
 
 /// An iterator returning a sequence of Entity values from `Entities::reserve_entities`.
@@ -547,11 +547,12 @@ impl Entities {
         }
 
         for (index, meta) in self.meta.iter_mut().enumerate() {
-            meta.generation = NonZeroU32::new(generations[index]).expect("Could not create non zero u32");
+            meta.generation =
+                NonZeroU32::new(generations[index]).expect("Could not create non zero u32");
         }
     }
 
-    pub fn push_pending(&mut self, pendings: &[u32])-> Result<(), PendingPushError> {
+    pub fn push_pending(&mut self, pendings: &[u32]) -> Result<(), PendingPushError> {
         self.pending.clear();
 
         let meta_length = self.meta.len();
@@ -561,7 +562,7 @@ impl Entities {
                 return Result::Err(PendingPushError::MetaTooSmall);
             }
 
-            if self.meta[*pending as usize].location.index != u32::MAX  {
+            if self.meta[*pending as usize].location.index != u32::MAX {
                 return Result::Err(PendingPushError::EntityNotPending);
             }
 
