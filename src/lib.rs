@@ -73,6 +73,7 @@ mod batch;
 mod borrow;
 mod bundle;
 mod change_tracker;
+mod cloning;
 mod command_buffer;
 mod entities;
 mod entity_builder;
@@ -90,6 +91,7 @@ pub use bundle::{
     bundle_satisfies_query, dynamic_bundle_satisfies_query, Bundle, DynamicBundle,
     DynamicBundleClone, MissingComponent,
 };
+pub use cloning::{Cloner, TypeUnknownToCloner};
 pub use change_tracker::{ChangeTracker, Changes};
 pub use command_buffer::CommandBuffer;
 pub use entities::{Entity, NoSuchEntity};
